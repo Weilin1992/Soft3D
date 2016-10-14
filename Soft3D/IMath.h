@@ -143,10 +143,18 @@ private:
 	Mat44f transform;
 	Vec4f v;
 	float w, h;
-
+	float fovy;
+private:
+	Transform() {}
 public:
-	Transform() {};
-	void init(int width, int height) {
+
+	void init(int width, int height,float fovy) {
+		this->fovy = fovy;
+		float aspect = (float)width / (float)height;
+		set_perspective(3.1415926 * 0.5f,aspect,1.0f,500.0f);
+		w = (float)width;
+		h = (float)height;
+		update();
 		
 	}
 	void update() {
@@ -160,5 +168,36 @@ public:
 		projection[2][2] = far / (far - near);
 		projection[3][2] = -near * far / (far - near);
 		projection[2][3] = 1;
+	}
+	void set_look_at(const Vec4f &eye, const Vec4f& at, const Vec4f &up) {
+		Vec4f zaxis = at - eye;
+		zaxis.normalize();
+		Vec4f xaxis = up.cross(zaxis);
+		xaxis.normalize();
+		Vec4f yaxis = xaxis.cross(zaxis);
+
+		view[0][0] = xaxis.x;
+		view[1][0] = xaxis.y;
+		view[2][0] = xaxis.z;
+		view[3][0] = -xaxis.dot(eye);
+
+		view[0][1] = yaxis.x;
+		view[1][1] = yaxis.y;
+		view[2][1] = yaxis.z;
+		view[3][1] = -yaxis.dot(eye);
+
+		view[0][2] = zaxis.x;
+		view[1][2] = zaxis.y;
+		view[2][2] = zaxis.z;
+		view[3][2] = -zaxis.dot(eye);
+
+		view[0][3] = view[1][3] = view[2][3] = 0.0f;
+		view[3][3] = 1.0f;
+
+
+
+
+
+
 	}
 };
