@@ -69,9 +69,6 @@ public:
 
 typedef Vector4<float> Vec4f;
 
-
-
-
 template<typename T>
 class Matrix44 {
 public:
@@ -118,11 +115,25 @@ public:
 		return scale;
 	}
 	
-	void Zero() {
+
+	void SetIdentity(){
+		m[0][0] = m[1][1] = m[2][2] = m[3][3] = T(1);
+		m[0][1] = m[0][2] = m[0][3] = T(0);
+		m[1][0] = m[1][2] = m[1][3] = T(0);
+		m[2][0] = m[2][1] = m[2][3] = T(0);
+		m[3][0] = m[3][1] = m[3][2] = T(0);
+	}
+	void SetZero() {
 		m[0][0] = m[0][1] = m[0][2] = m[0][3] = T(0);
 		m[1][0] = m[1][1] = m[1][2] = m[1][3] = T(0);
 		m[2][0] = m[2][1] = m[2][2] = m[2][3] = T(0);
 		m[3][0] = m[3][1] = m[3][2] = m[3][3] = T(0);
+	}
+	void SetScale(T x, T y, T z) {
+		SetIdentity();
+		m[0][0] = x;
+		m[1][1] = y;
+		m[2][2] = z;
 	}
 
 private:
@@ -144,8 +155,10 @@ private:
 	Vec4f v;
 	float w, h;
 	float fovy;
-private:
-	Transform() {}
+public:
+	Transform() {
+
+	}
 public:
 
 	void init(int width, int height,float fovy) {
@@ -157,12 +170,13 @@ public:
 		update();
 		
 	}
+
 	void update() {
 		transform = world*view*projection;
 	}
 	void set_perspective(float fovy, float aspect, float near, float far) {
 		float fax = 1.0f / (float)tan(fovy*0.5f);
-		projection.Zero();
+		projection.SetZero();
 		projection[0][0] = (float)(fax / aspect);
 		projection[1][1] = (float)(fax);
 		projection[2][2] = far / (far - near);
@@ -200,4 +214,34 @@ public:
 
 
 	}
+	
+	Vec4f apply(Vec4f v) {
+		return v*transform;
+	}
+
+	int check_cvv(const Vec4f& v) const{
+		float w = v.w;
+		int check = 0;
+		if (v.z < 0.0f) check |= 1;
+		if (v.z >  w) check |= 2;
+		if (v.x < -w) check |= 4;
+		if (v.x >  w) check |= 8;
+		if (v.y < -w) check |= 16;
+		if (v.y >  w) check |= 32;
+		return check;
+	}
+
+	Vec4f homogenize(const Vec4f& x) {
+		float rhw = 1.0f / x.w;
+		return Vec4f(
+			(x.x * rhw + 1.0f) * w * 0.5f,
+			(1.0f - x.y * rhw) * h * 0.5f,
+			x.z*rhw,
+			1.0f
+		);
+	}
+
+
 };
+
+typedef unsigned int IUINT32;
