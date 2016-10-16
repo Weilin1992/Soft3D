@@ -245,3 +245,9 @@ public:
 };
 
 typedef unsigned int IUINT32;
+
+int CMID(int x, int min, int max) {
+
+	return (x < min) ? min : ((x > max) ? max : x);
+
+}
