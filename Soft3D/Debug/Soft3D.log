@@ -1,0 +1,7 @@
+﻿  main.cpp
+c:\users\ziqi\documents\github\soft3d\soft3d\imath.h(203): warning C4305: “参数”: 从“double”到“float”截断
+c:\users\ziqi\documents\github\soft3d\soft3d\device.h(41): warning C4244: “参数”: 从“float”转换到“int”，可能丢失数据
+c:\users\ziqi\documents\github\soft3d\soft3d\device.h(49): warning C4305: “参数”: 从“double”到“float”截断
+c:\users\ziqi\documents\github\soft3d\soft3d\main.cpp(31): warning C4838: 从“int”转换到“DWORD”需要收缩转换
+  Soft3D.vcxproj -> C:\Users\ZiQi\Documents\GitHub\Soft3D\Debug\Soft3D.exe
+  Soft3D.vcxproj -> C:\Users\ZiQi\Documents\GitHub\Soft3D\Debug\Soft3D.pdb (Partial PDB)
