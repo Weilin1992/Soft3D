@@ -235,7 +235,7 @@ void screen_update(void) {
 int main(void)
 {
 
-	int states[] = { RENDER_STATE_TEXTURE, RENDER_STATE_COLOR, RENDER_STATE_WIREFRAME };
+	int states[] = { RENDER_STATE_TEXTURE, RENDER_STATE_COLOR, RENDER_STATE_WIREFRAME,RENDER_STATE_LIGHT };
 	int indicator = 0;
 	int kbhit = 0;
 	float alpha = 1;
@@ -249,9 +249,14 @@ int main(void)
 
 	Device device(800, 600, screen_fb);
 	
-
+	PointLight l = { { -100.f, 100.f, 100.f, 1.f },{ 0.5f, 0.5f, 0.5f }, {0.1,0.1,0.1} };
+	ParallelLight PL = { { -1.f, 1.f, 1.f, 0.f },{ 0.5f, 0.5f, 0.5f } };
+	device.light = &l;
+	device.Plight = &PL;
 	device.init_texture();
 	device.render_state = RENDER_STATE_TEXTURE;
+
+
 
 	int vsize, fsize;
 	Vertex* pVertexs;
@@ -260,7 +265,7 @@ int main(void)
 
 	device.set_model(pVertexs, pFaces, fsize, vsize);
 	device.set_vertex_normal();
-
+	float theta = 0.0;
 	while (screen_exit == 0 && screen_keys[VK_ESCAPE] == 0) {
 		screen_dispatch();
 		device.clear(1);
@@ -269,6 +274,7 @@ int main(void)
 		if (screen_keys[VK_DOWN]) pos += 0.01f;
 		if (screen_keys[VK_LEFT]) alpha += 0.01f;
 		if (screen_keys[VK_RIGHT]) alpha -= 0.01f;
+		//device.transform_Plight(theta+=0.1);
 
 		if (screen_keys[VK_SPACE]) {
 			if (kbhit == 0) {

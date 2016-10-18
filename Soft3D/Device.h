@@ -8,12 +8,15 @@
 const int RENDER_STATE_WIREFRAME = 1;		// 渲染线框
 const int RENDER_STATE_TEXTURE = 2;			// 渲染纹理
 const int RENDER_STATE_COLOR = 4;			// 渲染颜色
+const int RENDER_STATE_LIGHT = 8;			// 渲染光照
 class Device {
 public:
 	IUINT32 text[256][256];
 	Transform *transform;
 	Vertex *model;
 	Face * face;
+	PointLight *light;
+	ParallelLight *Plight;
 
 	int f_num;
 	int v_num;
@@ -115,7 +118,7 @@ public:
 	void set_vertex_normal() {
 
 		for (int i = 0; i < f_num; i++) {
-			this->face_normal(model[face[i].i1], model[face[i].i1], model[face[i].i1]);
+			this->face_normal(model[face[i].i1], model[face[i].i2], model[face[i].i3]);
 		}
 
 		for (int i = 0; i < v_num; i++) {
@@ -130,6 +133,7 @@ public:
 	void draw_primitive(const Vertex &v1,const Vertex &v2, const Vertex &v3) {
 
 		point_t p1, p2, p3, c1, c2, c3;
+		Vec4f n1, n2, n3;
 
 		//按照transform变化
 		c1 = transform->apply(v1.pos);
@@ -144,6 +148,11 @@ public:
 		p2 = transform->homogenize(c2);
 		p3 = transform->homogenize(c3);
 
+		n1 = transform->apply(v1.normal);
+		n2 = transform->apply(v2.normal);
+		n3 = transform->apply(v3.normal);
+
+
 		//
 		if (render_state & (RENDER_STATE_TEXTURE | RENDER_STATE_COLOR)) {
 			Vertex t1 = v1, t2 = v2, t3 = v3;
@@ -157,6 +166,10 @@ public:
 			t1.pos.w = c1.w;
 			t2.pos.w = c2.w;
 			t3.pos.w = c3.w;
+
+			t1.normal = n1;
+			t2.normal = n2;
+			t3.normal = n3;
 
 			t1.rhw_init();
 			t2.rhw_init();
@@ -244,6 +257,7 @@ public:
 		float t2 = (y - trap->right.v1.pos.y) / s2;
 		trap->left.v = Vertex::Interp(trap->left.v1, trap->left.v2, t1);
 		trap->right.v = Vertex::Interp(trap->right.v1, trap->right.v2, t2);
+
 		
 	}
 
@@ -285,8 +299,46 @@ public:
 						float u = scanline->v.tc.u * ww;
 						float v = scanline->v.tc.v * ww;
 						IUINT32 cc = read_texture(u, v);
+
+						Vec4f lightdir = light->pos - scanline->v.pos;
+						lightdir.normalize();
+						scanline->v.normal.normalize();
+						float diff = scanline->v.normal.dot(lightdir);
+
+						diff = max(0, diff);
+
+
+						float inv = (float)1 / 255;
+						color_t tex_color = { (cc >> 16) * inv, (cc >> 8 & 0xff) * inv, (cc & 0xff) * inv };
+						color_t ambient = { 1.0f, 1.0f, 1.0f };
+						float intensity = 0.3;
+
+						// 环境光的影响
+						ambient.r *= intensity * tex_color.r;
+						ambient.g *= intensity * tex_color.g;
+						ambient.b *= intensity * tex_color.b;
+
+						color_t diffuse = { 0.f, 0.f, 0.f };
+						if (diff > 0) {
+							diffuse.r = tex_color.r * diff;
+							diffuse.g = tex_color.g * diff;
+							diffuse.b = tex_color.b * diff;
+						}
+						ambient.r += diffuse.r;
+						ambient.g += diffuse.g;
+						ambient.b += diffuse.b;
+						color_t res;
+						res = ambient;
+						res.r = res.r > 1.f ? 1.f : res.r;
+						res.g = res.g > 1.f ? 1.f : res.g;
+						res.b = res.b > 1.f ? 1.f : res.b;
+						cc = (int(res.r * 255) << 16 | int(res.g * 255) << 8 | int(res.b * 255));
+						
 						fb[x] = cc;
 					}
+
+
+
 				}
 			}
 			scanline->v.add(scanline->step);
@@ -479,5 +531,16 @@ public:
 		draw_plane(2, 6, 7, 3);
 		draw_plane(3, 7, 4, 0);
 	}
+
+	void transform_Plight(float theta) {
+		Mat44f m;
+		m.SetRotate(0.0f, 1.0f, 0.0f, theta);
+		transform->world = m;
+		transform->update();
+		transform->apply(Plight->direction);
+		Plight->direction.normalize();
+	}
+
+
 };
 

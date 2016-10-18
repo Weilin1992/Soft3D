@@ -50,6 +50,8 @@ public:
 		res.pos.z = (v2.pos.z - v1.pos.z)*inv;
 		res.pos.w = (v2.pos.w - v1.pos.w)*inv;
 
+		res.normal = (v1.normal - v2.normal)*inv;
+
 		res.tc.u = (v2.tc.u - v1.tc.u)*inv;
 		res.tc.v = (v2.tc.v - v1.tc.v)*inv;
 
@@ -65,6 +67,7 @@ public:
 		
 
 		this->pos = v.pos + this->pos;
+		this->normal = v.normal + this->normal;
 		this->tc.u = v.tc.u + this->tc.u;
 		this->tc.v = v.tc.v + this->tc.v;
 		this->color.r = v.color.r + this->color.r;
@@ -79,6 +82,13 @@ public:
 		res.pos.x = interp(v1.pos.x, v2.pos.x, t);
 		res.pos.y= interp(v1.pos.y, v2.pos.y, t);
 		res.pos.z = interp(v1.pos.z, v2.pos.z, t);
+
+		res.normal.x = interp(v1.normal.x, v2.normal.x, t);
+		res.normal.y = interp(v1.normal.y, v2.normal.y, t);
+		res.normal.z = interp(v1.normal.z, v2.normal.z, t);
+		res.normal.w = 0.0f;
+		res.normal.normalize();
+
 		res.pos.w = interp(v1.pos.w, v2.pos.w, t);
 		res.tc.u = interp(v1.tc.u, v2.tc.u, t);
 		res.tc.v = interp(v1.tc.v, v2.tc.v, t);
@@ -101,3 +111,14 @@ typedef struct { Vertex v, v1, v2; } edge_t;
 typedef struct { float top, bottom; edge_t left, right; } trapezoid_t;
 typedef struct { Vertex v, step; int x, y, w; } scanline_t;
 
+struct PointLight {
+	Vec4f pos;
+	color_t color;
+	color_t ambient;
+};
+
+struct ParallelLight{
+	Vec4f direction;
+	color_t color;
+	color_t ambient;
+};
