@@ -7,11 +7,16 @@
 #include <iostream>
 const int RENDER_STATE_WIREFRAME = 1;		// äÖÈ¾Ïß¿ò
 const int RENDER_STATE_TEXTURE = 2;			// äÖÈ¾ÎÆÀí
-const int RENDER_STATE_COLOR = 3;			// äÖÈ¾ÑÕÉ«
+const int RENDER_STATE_COLOR = 4;			// äÖÈ¾ÑÕÉ«
 class Device {
 public:
 	IUINT32 text[256][256];
 	Transform *transform;
+	Vertex *model;
+	Face * face;
+
+	int f_num;
+	int v_num;
 	int width;
 	int height;
 	IUINT32 **framebuffer;
@@ -99,6 +104,25 @@ public:
 		render_state = state;
 	}
 
+	void set_model(Vertex* v, Face *face,int f_num,int v_num) {
+		model = v;
+		this->face = face;
+		this->f_num = f_num;
+		this->v_num = v_num;
+
+	}
+
+	void set_vertex_normal() {
+
+		for (int i = 0; i < f_num; i++) {
+			this->face_normal(model[face[i].i1], model[face[i].i1], model[face[i].i1]);
+		}
+
+		for (int i = 0; i < v_num; i++) {
+			model[i].normal.normalize();
+		}
+	}
+
 	~Device() {
 		delete transform;
 	}
@@ -143,7 +167,7 @@ public:
 			if (n >= 1) render_trap(&traps[0]);
 			if (n >= 2) render_trap(&traps[1]);
 		}
-		if (!render_state &RENDER_STATE_WIREFRAME) {
+		if (render_state &RENDER_STATE_WIREFRAME) {
 			draw_line((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, foreground);
 			draw_line((int)p1.x, (int)p1.y, (int)p3.x, (int)p3.y, foreground);
 			draw_line((int)p3.x, (int)p3.y, (int)p2.x, (int)p2.y, foreground);
@@ -392,12 +416,47 @@ public:
 	}
 
 	void camera_at_zero(float x,float y,float z) {
-		point_t eye = { x, y, z, 1 }, at = { 0, 0, 0, 1 }, up = { 0, 0, 1, 1 };
+		point_t eye = { x, y, z, 1 }, at = { 0, 0, 0, 1 }, up = { 0, 1, 0, 1 };
 		transform->set_look_at(eye, at, up);
 		transform->update();
 	}
 
+	void face_normal(Vertex &v1, Vertex &v2, Vertex &v3) {
+		
+		Vec4f& p1 = v1.pos;
+		Vec4f& p2 = v2.pos;
+		Vec4f& p3 = v3.pos;
 
+		Vec4f edge1, edge2, pn;
+
+		edge1 = p2 - p1;
+		edge2 = p3 - p2;
+
+		pn = edge1.cross(edge2);
+		v1.normal =v1.normal + pn;
+		v2.normal =v2.normal + pn;
+		v3.normal =v3.normal + pn;
+	}
+
+	void draw_model(float theta) {
+		Mat44f m;
+		m.SetRotate(0.0f, 1.0f, 0.0f, theta);
+		transform->world = m;
+		transform->update();
+		for (int i = 0; i < f_num; i++) {
+			int i1 = face[i].i1;
+			int i2 = face[i].i2;
+			int i3 = face[i].i3;
+
+			Vertex v1 = model[i1];
+			Vertex v2 = model[i2];
+			Vertex v3 = model[i3];
+			v1.tc = { 0,0 };
+			v2.tc = { 0,0 };
+			v3.tc = { 0,0 };
+			draw_primitive(v1, v2, v3);
+		}
+	}
 
 	void draw_plane(int a, int b, int c, int d) {
 

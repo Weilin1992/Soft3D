@@ -291,3 +291,4 @@ int CMID(int x, int min, int max) {
 float interp(float x1, float x2, float t) {
 	return x1 + (x2 - x1)*t;
 }
+

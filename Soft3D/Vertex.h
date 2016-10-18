@@ -4,13 +4,16 @@
 typedef struct { float r, g, b; } color_t;
 typedef struct { float u, v; } texcoord_t;
 typedef Vec4f point_t;
-
+struct Face {
+	int i1, i2, i3;
+};
 class Vertex {
 public:
 	point_t pos;
 	texcoord_t tc;
 	color_t color;
 	float rhw;
+	Vec4f normal;
 
 public:
 	Vertex() {}
@@ -26,6 +29,7 @@ public:
 		color = v.color;
 		tc = v.tc;
 		rhw = v.rhw;
+		normal = v.normal;
 	}
 
 	void rhw_init() {
@@ -87,6 +91,9 @@ public:
 	}
 
 };
+
+
+
 
 
 

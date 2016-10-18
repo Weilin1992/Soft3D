@@ -17,7 +17,113 @@ int screen_init(int w, int h, const TCHAR *title);
 int screen_close(void);
 void screen_dispatch(void);
 void screen_update(void);
+char *ReadFile(const char* file)
+{
+	FILE *pFile;
+	int err = fopen_s(&pFile,file, "rb");
+	if (err == 1)  //if(err == NULL)
+	{
+		printf("ERROR！");
+		
+	}
+	if (!pFile) {
+		return NULL;
+	}
 
+	char *pBuf;
+	fseek(pFile, 0, SEEK_END);
+	int len = ftell(pFile);
+	pBuf = new char[len + 1];
+	rewind(pFile);
+	fread(pBuf, 1, len, pFile);
+	pBuf[len] = '\0';
+	fclose(pFile);
+	return pBuf;
+}
+
+int LoadMesh(const char *file, Vertex*& pVertexs, int& vsize, Face*& pFaces, int& fsize)
+{
+	char* pFile;
+	pFile = ReadFile(file);
+	if (!pFile) {
+		return 0;
+	}
+
+	char* pSrc;
+	pSrc = pFile;
+
+	int i, vc, fc;
+
+	// 计算顶点和面的个数
+	i = 0, vc = 0, fc = 0;
+	char line[1024];
+	memset(line, 0, 1024);
+	for (; *pSrc != '\0';) {
+		if (*pSrc == '\n') {
+			if (line[0] == 'v') {
+				++vc;
+			}
+			else if (line[0] == 'f') {
+				++fc;
+			}
+
+			i = 0;
+			memset(line, 0, 1024);
+		}
+		else {
+			if (i > 1024) {
+				delete pFile;
+				return 0;
+			}
+			line[i++] = *pSrc;
+		}
+		++pSrc;
+	}
+	if (vc == 0 || fc == 0) {
+		delete pFile;
+		return 0;
+	}
+
+	vsize = vc; fsize = fc;
+	pVertexs = new Vertex[vc];
+	pFaces = new Face[fc];
+
+	pSrc = pFile;
+
+	// 读取数据
+	i = 0, vc = 0, fc = 0;
+	memset(line, 0, 1024);
+	for (; *pSrc != '\0';) {
+		if (*pSrc == '\n') {
+			if (line[0] == 'v') {
+				float x, y, z;
+				sscanf_s(line, "v %f %f %f", &x, &y, &z);
+				pVertexs[vc].pos = { x, y, z, 1.f };
+				pVertexs[vc].color = { 0.f, 0.f, 0.f };
+				pVertexs[vc].tc = { 0.f, 1.f };
+				pVertexs[vc].rhw = 1.f;
+				vc++;
+			}
+			else if (line[0] == 'f') {
+				int p1, p2, p3;
+				sscanf_s(line, "f %d %d %d", &p1, &p2, &p3);
+
+				pFaces[fc++] = { p1 - 1, p2 - 1, p3 - 1 };
+			}
+
+			i = 0;
+			memset(line, 0, 1024);
+		}
+		else {
+			line[i++] = *pSrc;
+		}
+		++pSrc;
+	}
+
+	delete pFile;
+
+	return 1;
+}
 
 static LRESULT screen_events(HWND, UINT, WPARAM, LPARAM);
 
@@ -133,7 +239,7 @@ int main(void)
 	int indicator = 0;
 	int kbhit = 0;
 	float alpha = 1;
-	float pos = 3.5;
+	float pos = 5.0f;
 
 	TCHAR *title = _T("Mini3d (software render tutorial) - ")
 		_T("Left/Right: rotation, Up/Down: forward/backward, Space: switch state");
@@ -147,10 +253,18 @@ int main(void)
 	device.init_texture();
 	device.render_state = RENDER_STATE_TEXTURE;
 
+	int vsize, fsize;
+	Vertex* pVertexs;
+	Face* pFaces;
+	LoadMesh("models/teapot.obj", pVertexs, vsize, pFaces, fsize);
+
+	device.set_model(pVertexs, pFaces, fsize, vsize);
+	device.set_vertex_normal();
+
 	while (screen_exit == 0 && screen_keys[VK_ESCAPE] == 0) {
 		screen_dispatch();
 		device.clear(1);
-		device.camera_at_zero(pos, 0, 0);
+		device.camera_at_zero(pos, 3, 0);
 		if (screen_keys[VK_UP]) pos -= 0.01f;
 		if (screen_keys[VK_DOWN]) pos += 0.01f;
 		if (screen_keys[VK_LEFT]) alpha += 0.01f;
@@ -166,8 +280,8 @@ int main(void)
 		else {
 			kbhit = 0;
 		}
-
-		device.draw_box(alpha);
+		device.draw_model(alpha);
+		//device.draw_box(alpha);
 		screen_update();
 		Sleep(1);
 	}
