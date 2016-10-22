@@ -1,6 +1,6 @@
 #include <Windows.h>
-#include "Device.h"
 #include <tchar.h>
+#include "Device.h"
 int screen_w, screen_h, screen_exit = 0;
 int  screen_mx = 0, screen_my = 0, screen_mb = 0;
 
@@ -17,6 +17,7 @@ int screen_init(int w, int h, const TCHAR *title);
 int screen_close(void);
 void screen_dispatch(void);
 void screen_update(void);
+/*
 char *ReadFile(const char* file)
 {
 	FILE *pFile;
@@ -40,6 +41,7 @@ char *ReadFile(const char* file)
 	fclose(pFile);
 	return pBuf;
 }
+
 
 int LoadMesh(const char *file, Vertex*& pVertexs, int& vsize, Face*& pFaces, int& fsize)
 {
@@ -124,13 +126,9 @@ int LoadMesh(const char *file, Vertex*& pVertexs, int& vsize, Face*& pFaces, int
 
 	return 1;
 }
+*/
 
 static LRESULT screen_events(HWND, UINT, WPARAM, LPARAM);
-
-#ifdef _MSC_VER
-#pragma comment(lib, "gdi32.lib")
-#pragma comment(lib, "user32.lib")
-#endif
 
 int screen_init(int w, int h, const TCHAR *title) {
 	WNDCLASS wc = { CS_BYTEALIGNCLIENT,(WNDPROC)screen_events,0,0,0,NULL,NULL,NULL,NULL,("SCREENPI") };
@@ -251,20 +249,21 @@ int main(void)
 	
 	PointLight l = { { -100.f, 100.f, 100.f, 1.f },{ 0.5f, 0.5f, 0.5f }, {0.1,0.1,0.1} };
 	ParallelLight PL = { { -1.f, 1.f, 1.f, 0.f },{ 0.5f, 0.5f, 0.5f } };
-	device.light = &l;
-	device.Plight = &PL;
+	device.pointLight = &l;
+	device.paraLight = &PL;
 	device.init_texture();
 	device.render_state = RENDER_STATE_TEXTURE;
 
 
-
+	/*
 	int vsize, fsize;
 	Vertex* pVertexs;
 	Face* pFaces;
-	LoadMesh("models/teapot.obj", pVertexs, vsize, pFaces, fsize);
+	*/
+	//LoadMesh("models/teapot.obj", pVertexs, vsize, pFaces, fsize);
 
-	device.set_model(pVertexs, pFaces, fsize, vsize);
-	device.set_vertex_normal();
+	device.load_model("models/teapot.obj");
+
 	float theta = 0.0;
 	while (screen_exit == 0 && screen_keys[VK_ESCAPE] == 0) {
 		screen_dispatch();

@@ -1,6 +1,6 @@
-
+#pragma once
 #include "IMath.h"
-#include <iostream>
+
 typedef struct { float r, g, b; } color_t;
 typedef struct { float u, v; } texcoord_t;
 typedef Vec4f point_t;
@@ -64,8 +64,6 @@ public:
 	}
 
 	void add(const Vertex &v) {
-		
-
 		this->pos = v.pos + this->pos;
 		this->normal = v.normal + this->normal;
 		this->tc.u = v.tc.u + this->tc.u;
@@ -96,16 +94,10 @@ public:
 		res.color.g = interp(v1.color.g, v2.color.g, t);
 		res.color.b = interp(v1.color.b, v2.color.b, t);
 		res.rhw = interp(v1.rhw, v2.rhw,t);
-		//std::cout << res.rhw;
 		return res;
 	}
 
 };
-
-
-
-
-
 
 typedef struct { Vertex v, v1, v2; } edge_t;
 typedef struct { float top, bottom; edge_t left, right; } trapezoid_t;
