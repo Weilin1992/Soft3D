@@ -25,6 +25,8 @@ Device::Device(int width, int height, IUINT32 * fb)
 	transform->init(width, height, 3.1415926 * 0.5f);
 	render_state = RENDER_STATE_WIREFRAME;
 	mesh_init();
+	m_shader = new Shader();
+
 }
 
 void Device::set_render_state(int state)
@@ -41,49 +43,73 @@ void Device::load_model(const char * file)
 
 void Device::draw_primitive(const Vertex & v1, const Vertex & v2, const Vertex & v3)
 {
+	
 
 	point_t p1, p2, p3, c1, c2, c3;
 	Vec4f n1, n2, n3;
+	
+	
+	//Vertex Shader
+	VertexOut t1, t2, t3;
+
+	t1 = m_shader->VS(v1);
+	t2 = m_shader->VS(v2);
+	t3 = m_shader->VS(v3);
+
+	//check cvv
+	if (transform->check_cvv(t1.posP) != 0) return;
+	if (transform->check_cvv(t2.posP) != 0)	return;
+	if (transform->check_cvv(t3.posP) != 0)	return;
+
+	t1.oneDivZ = 1/t1.posP.w;
+	t2.oneDivZ = 1/t2.posP.w;
+	t3.oneDivZ = 1/t3.posP.w;
+
+	t1.posP = transform->homogenize(t1.posP);
+	t2.posP = transform->homogenize(t2.posP);
+	t3.posP = transform->homogenize(t3.posP);
+
+	t1.onDivZ_init();
+	t2.onDivZ_init();
+	t3.onDivZ_init();
 
 	//按照transform变化
 	c1 = transform->apply(v1.pos);
-	c2 = transform->apply(v2.pos);
-	c3 = transform->apply(v3.pos);
+	//c2 = transform->apply(v2.pos);
+	//c3 = transform->apply(v3.pos);
 
-	if (transform->check_cvv(c1) != 0) return;
-	if (transform->check_cvv(c2) != 0) return;
-	if (transform->check_cvv(c3) != 0) return;
+	//if (transform->check_cvv(c1) != 0) return;
+	//if (transform->check_cvv(c2) != 0) return;
+	//if (transform->check_cvv(c3) != 0) return;
 
 	p1 = transform->homogenize(c1);
-	p2 = transform->homogenize(c2);
-	p3 = transform->homogenize(c3);
+	//p2 = transform->homogenize(c2);
+	//p3 = transform->homogenize(c3);
 
-	n1 = transform->apply(v1.normal);
-	n2 = transform->apply(v2.normal);
-	n3 = transform->apply(v3.normal);
+	//n1 = transform->apply(v1.normal);
+	//n2 = transform->apply(v2.normal);
+	//n3 = transform->apply(v3.normal);
 
 
-	//
 	if (render_state & (RENDER_STATE_TEXTURE | RENDER_STATE_COLOR)) {
-		Vertex t1 = v1, t2 = v2, t3 = v3;
+		//VertexOut t1 = v1, t2 = v2, t3 = v3;
 		int n;
 		trapezoid_t traps[2];
 
+		//t1.pos = p1;
+		//t2.pos = p2;
+		//t3.pos = p3;
+		//t1.pos.w = c1.w;
+		//t2.pos.w = c2.w;
+		//t3.pos.w = c3.w;
 
-		t1.pos = p1;
-		t2.pos = p2;
-		t3.pos = p3;
-		t1.pos.w = c1.w;
-		t2.pos.w = c2.w;
-		t3.pos.w = c3.w;
+		//t1.normal = n1;
+		//t2.normal = n2;
+		//t3.normal = n3;
 
-		t1.normal = n1;
-		t2.normal = n2;
-		t3.normal = n3;
-
-		t1.rhw_init();
-		t2.rhw_init();
-		t3.rhw_init();
+		//t1.rhw_init();
+		//t2.rhw_init();
+		//t3.rhw_init();
 
 		n = trapezoid_init_triangle(traps, &t1, &t2, &t3);
 
@@ -97,22 +123,22 @@ void Device::draw_primitive(const Vertex & v1, const Vertex & v2, const Vertex &
 	}
 }
 
-int Device::trapezoid_init_triangle(trapezoid_t * trap, Vertex * p1, Vertex * p2, Vertex * p3)
+int Device::trapezoid_init_triangle(trapezoid_t * trap, VertexOut * p1, VertexOut * p2, VertexOut * p3)
 {
 	{
-		Vertex *p = new Vertex();
+		VertexOut *p = new VertexOut();
 		float k, x;
 
-		if (p1->pos.y > p2->pos.y) p = p1, p1 = p2, p2 = p;
-		if (p1->pos.y > p3->pos.y) p = p1, p1 = p3, p3 = p;
-		if (p2->pos.y > p3->pos.y) p = p2, p2 = p3, p3 = p;
-		if (p1->pos.y == p2->pos.y && p1->pos.y == p3->pos.y) return 0;
-		if (p1->pos.x == p2->pos.x && p1->pos.x == p3->pos.x) return 0;
+		if (p1->posP.y > p2->posP.y) p = p1, p1 = p2, p2 = p;
+		if (p1->posP.y > p3->posP.y) p = p1, p1 = p3, p3 = p;
+		if (p2->posP.y > p3->posP.y) p = p2, p2 = p3, p3 = p;
+		if (p1->posP.y == p2->posP.y && p1->posP.y == p3->posP.y) return 0;
+		if (p1->posP.x == p2->posP.x && p1->posP.x == p3->posP.x) return 0;
 
-		if (p1->pos.y == p2->pos.y) {
-			if (p1->pos.x > p2->pos.x) p = p1, p1 = p2, p2 = p;
-			trap[0].top = p1->pos.y;
-			trap[0].bottom = p3->pos.y;
+		if (p1->posP.y == p2->posP.y) {
+			if (p1->posP.x > p2->posP.x) p = p1, p1 = p2, p2 = p;
+			trap[0].top = p1->posP.y;
+			trap[0].bottom = p3->posP.y;
 			trap[0].left.v1 = *p1;
 			trap[0].left.v2 = *p3;
 			trap[0].right.v1 = *p2;
@@ -120,10 +146,10 @@ int Device::trapezoid_init_triangle(trapezoid_t * trap, Vertex * p1, Vertex * p2
 			return (trap[0].top < trap[0].bottom) ? 1 : 0;
 		}
 
-		if (p2->pos.y == p3->pos.y) {
-			if (p2->pos.x > p3->pos.x) p = p2, p2 = p3, p3 = p;
-			trap[0].top = p1->pos.y;
-			trap[0].bottom = p2->pos.y;
+		if (p2->posP.y == p3->posP.y) {
+			if (p2->posP.x > p3->posP.x) p = p2, p2 = p3, p3 = p;
+			trap[0].top = p1->posP.y;
+			trap[0].bottom = p2->posP.y;
 			trap[0].left.v1 = *p1;
 			trap[0].right.v1 = *p1;
 			trap[0].left.v2 = *p2;
@@ -131,15 +157,15 @@ int Device::trapezoid_init_triangle(trapezoid_t * trap, Vertex * p1, Vertex * p2
 			return (trap[0].top < trap[0].bottom) ? 1 : 0;
 		}
 
-		trap[0].top = p1->pos.y;
-		trap[0].bottom = p2->pos.y;
-		trap[1].top = p2->pos.y;
-		trap[1].bottom = p3->pos.y;
+		trap[0].top = p1->posP.y;
+		trap[0].bottom = p2->posP.y;
+		trap[1].top = p2->posP.y;
+		trap[1].bottom = p3->posP.y;
 
-		k = (p3->pos.y - p1->pos.y) / (p2->pos.y - p1->pos.y);
-		x = p1->pos.x + (p2->pos.x - p1->pos.x) * k;
+		k = (p3->posP.y - p1->posP.y) / (p2->posP.y - p1->posP.y);
+		x = p1->posP.x + (p2->posP.x - p1->posP.x) * k;
 
-		if (x <= p3->pos.x) {		// triangle left
+		if (x <= p3->posP.x) {		// triangle left
 			trap[0].left.v1 = *p1;
 			trap[0].left.v2 = *p2;
 			trap[0].right.v1 = *p1;
@@ -165,23 +191,23 @@ int Device::trapezoid_init_triangle(trapezoid_t * trap, Vertex * p1, Vertex * p2
 
 void Device::trapezoid_edge_interp(trapezoid_t * trap, float y)
 {
-	float s1 = trap->left.v2.pos.y - trap->left.v1.pos.y;
-	float s2 = trap->right.v2.pos.y - trap->right.v1.pos.y;
-	float t1 = (y - trap->left.v1.pos.y) / s1;
-	float t2 = (y - trap->right.v1.pos.y) / s2;
-	trap->left.v = Vertex::Interp(trap->left.v1, trap->left.v2, t1);
-	trap->right.v = Vertex::Interp(trap->right.v1, trap->right.v2, t2);
+	float s1 = trap->left.v2.posP.y - trap->left.v1.posP.y;
+	float s2 = trap->right.v2.posP.y - trap->right.v1.posP.y;
+	float t1 = (y - trap->left.v1.posP.y) / s1;
+	float t2 = (y - trap->right.v1.posP.y) / s2;
+	trap->left.v = VertexOut::Interp(trap->left.v1, trap->left.v2, t1);
+	trap->right.v = VertexOut::Interp(trap->right.v1, trap->right.v2, t2);
 }
 
 void Device::trapezoid_init_scan_line(const trapezoid_t * trap, scanline_t * scanline, int y)
 {
-	float width = trap->right.v.pos.x - trap->left.v.pos.x;
-	scanline->x = (int)(trap->left.v.pos.x + 0.5f);
-	scanline->w = (int)(trap->right.v.pos.x + 0.5f) - scanline->x;
+	float width = trap->right.v.posP.x - trap->left.v.posP.x;
+	scanline->x = (int)(trap->left.v.posP.x + 0.5f);
+	scanline->w = (int)(trap->right.v.posP.x + 0.5f) - scanline->x;
 	scanline->y = y;
 	scanline->v = trap->left.v;
-	if (trap->left.v.pos.x >= trap->right.v.pos.x) scanline->w = 0;
-	scanline->step = Vertex::division(trap->left.v, trap->right.v, width);
+	if (trap->left.v.posP.x >= trap->right.v.posP.x) scanline->w = 0;
+	scanline->step = VertexOut::division(trap->left.v, trap->right.v, width);
 }
 
 void Device::draw_scanline(scanline_t * scanline)
@@ -192,7 +218,7 @@ void Device::draw_scanline(scanline_t * scanline)
 	int w = scanline->w;
 	for (; w > 0; x++, w--) {
 		if (x >= 0 && x < width) {
-			float rhw = scanline->v.rhw;
+			float rhw = scanline->v.oneDivZ;
 			if (rhw >= zb[x]) {
 				float ww = 1.0f / rhw;
 				zb[x] = rhw;
@@ -214,19 +240,21 @@ void Device::draw_scanline(scanline_t * scanline)
 					float v = scanline->v.tc.v * ww;
 					IUINT32 cc = read_texture(u, v);
 
-					Vec4f lightdir = pointLight->pos - scanline->v.pos;
+					Vec4f lightdir = paraLight->direction;
+					//lightdir = mul(lightdir, transform->world);
 					lightdir.normalize();
-					scanline->v.normal.normalize();
-					float diff = scanline->v.normal.dot(lightdir);
+					Vec4f n = scanline->v.normal;
+					n.normalize();
+					float diff = n.dot(lightdir);
 
-					diff = diff > 0 ? diff : 0;
+					//diff = diff > 0 ? diff : 0;
 
 
 					float inv = (float)1 / 255;
 					color_t tex_color = { (cc >> 16) * inv, (cc >> 8 & 0xff) * inv, (cc & 0xff) * inv };
 					color_t ambient = { 1.0f, 1.0f, 1.0f };
 					float intensity = 0.3;
-
+					tex_color = {(float) 0.0666666701, (float)0.933333397,(float)0.933333397 };
 					// 环境光的影响
 					ambient.r *= intensity * tex_color.r;
 					ambient.g *= intensity * tex_color.g;
@@ -395,14 +423,20 @@ void Device::camera_at_zero(float x, float y, float z)
 	point_t eye = { x, y, z, 1 }, at = { 0, 0, 0, 1 }, up = { 0, 1, 0, 1 };
 	transform->set_look_at(eye, at, up);
 	transform->update();
+	m_shader->SetEyePos(eye);
+	m_shader->SetWorldViewProj(transform->transform);
 }
 
 void Device::draw_model(float theta)
 {
 	Mat44f m;
 	m.SetRotate(0.0f, 1.0f, 0.0f, theta);
+
 	transform->world = m;
 	transform->update();
+	m_shader->SetWorld(m);
+	m_shader->SetWorldViewProj(transform->transform);
+
 	Vertex *v = model->pVertexs;
 	Face *face = model->pFaces;
 	for (int i = 0; i < f_num; i++) {
@@ -416,6 +450,7 @@ void Device::draw_model(float theta)
 		v1.tc = { 0,0 };
 		v2.tc = { 0,0 };
 		v3.tc = { 0,0 };
+		face_normal(v1, v2, v3);
 		draw_primitive(v1, v2, v3);
 	}
 }
@@ -445,7 +480,9 @@ void Device::draw_box(float theta)
 
 void Device::transform_Plight(float theta)
 {
-
+	Mat44f m;
+	m.SetRotate(0.0f, 1.0f, 0.0f, theta);
+	paraLight->direction = mul(paraLight->direction, m);
 }
 
 

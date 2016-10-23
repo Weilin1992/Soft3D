@@ -72,7 +72,6 @@ public:
 		this->color.b = v.color.b + this->color.b;
 		this->color.g = v.color.g + this->color.g;
 		this->rhw = v.rhw + this->rhw;
-
 	}
 	
 	static Vertex Interp(const Vertex &v1,const Vertex &v2,float t) {
@@ -99,9 +98,7 @@ public:
 
 };
 
-typedef struct { Vertex v, v1, v2; } edge_t;
-typedef struct { float top, bottom; edge_t left, right; } trapezoid_t;
-typedef struct { Vertex v, step; int x, y, w; } scanline_t;
+
 
 struct PointLight {
 	Vec4f pos;
@@ -114,3 +111,120 @@ struct ParallelLight{
 	color_t color;
 	color_t ambient;
 };
+
+class VertexIn {
+public:
+
+	point_t pos;
+	color_t color;
+	texcoord_t tc;
+	Vec4f normal;
+	VertexIn() {}
+	VertexIn(point_t pos, color_t color, texcoord_t tc, Vec4f normal)
+		:pos(pos), color(color), tc(tc), normal(normal) {}
+
+	VertexIn(const VertexIn &in)
+		:pos(in.pos), color(in.color), tc(in.tc), normal(normal) {}
+};
+
+
+class VertexOut {
+public:
+	//世界变换后的坐标
+	point_t posW;
+	//投影变换后的坐标
+	point_t posP;
+	texcoord_t tc;
+	Vec4f normal;
+	color_t color;
+	float oneDivZ;
+
+	VertexOut() {};
+	VertexOut(point_t posW, point_t posP, texcoord_t tc, Vec4f normal, color_t color, float w)
+		:posW(posW), posP(posP), tc(tc), normal(normal), color(color), oneDivZ(w) {}
+
+	VertexOut& operator= (const VertexOut& rhs)
+	{
+		if (this == &rhs)
+			return *this;
+		this->normal = rhs.normal;
+		this->posW = rhs.posW;
+		this->posP = rhs.posP;
+		this->tc = rhs.tc;
+		this->color = rhs.color;
+		this->oneDivZ = rhs.oneDivZ;
+		return *this;
+	}
+
+	void onDivZ_init() {
+		
+		float rhw = oneDivZ;
+		tc.u *= rhw;
+		tc.v *= rhw;
+		color.r *= rhw;
+		color.g *= rhw;
+		color.b *= rhw;
+		normal.x *=rhw;
+		normal.z *= rhw;
+		normal.y *= rhw;
+	}
+
+
+	static VertexOut Interp(const VertexOut &v1, const VertexOut &v2, float t) {
+		VertexOut res;
+		res.posP.x = interp(v1.posP.x, v2.posP.x, t);
+		res.posP.y = interp(v1.posP.y, v2.posP.y, t);
+		res.posP.z = interp(v1.posP.z, v2.posP.z, t);
+
+		res.normal.x = interp(v1.normal.x, v2.normal.x, t);
+		res.normal.y = interp(v1.normal.y, v2.normal.y, t);
+		res.normal.z = interp(v1.normal.z, v2.normal.z, t);
+		res.normal.w = 0.0f;
+		res.normal.normalize();
+
+		res.posP.w = interp(v1.posP.w, v2.posP.w, t);
+		res.tc.u = interp(v1.tc.u, v2.tc.u, t);
+		res.tc.v = interp(v1.tc.v, v2.tc.v, t);
+		res.color.r = interp(v1.color.r, v2.color.r, t);
+		res.color.g = interp(v1.color.g, v2.color.g, t);
+		res.color.b = interp(v1.color.b, v2.color.b, t);
+		res.oneDivZ = interp(v1.oneDivZ, v2.oneDivZ, t);
+		return res;
+	}
+	static VertexOut division(const VertexOut& v1, const VertexOut& v2, float w) {
+		float inv = 1.0f / w;
+		VertexOut res;
+		res.posP.x = (v2.posP.x - v1.posP.x)*inv;
+		res.posP.y = (v2.posP.y - v1.posP.y)*inv;
+		res.posP.z = (v2.posP.z - v1.posP.z)*inv;
+		res.posP.w = (v2.posP.w - v1.posP.w)*inv;
+
+		res.normal.x = (v2.normal.x - v1.normal.x)*inv;
+		res.normal.y = (v2.normal.y - v1.normal.y)*inv;
+		res.normal.z = (v2.normal.z - v1.normal.z)*inv;
+
+		res.tc.u = (v2.tc.u - v1.tc.u)*inv;
+		res.tc.v = (v2.tc.v - v1.tc.v)*inv;
+
+		res.color.r = (v2.color.r - v1.color.r)*inv;
+		res.color.g = (v2.color.g - v1.color.g)*inv;
+		res.color.b = (v2.color.b - v1.color.b)*inv;
+
+		res.oneDivZ = (v2.oneDivZ - v1.oneDivZ) * inv;
+		return res;
+	}
+	void add(const VertexOut &v) {
+		this->posP = v.posP + this->posP;
+		this->normal = v.normal + this->normal;
+		this->tc.u = v.tc.u + this->tc.u;
+		this->tc.v = v.tc.v + this->tc.v;
+		this->color.r = v.color.r + this->color.r;
+		this->color.b = v.color.b + this->color.b;
+		this->color.g = v.color.g + this->color.g;
+		this->oneDivZ = v.oneDivZ + this->oneDivZ;
+	}
+};
+
+typedef struct { VertexOut v, v1, v2; } edge_t;
+typedef struct { float top, bottom; edge_t left, right; } trapezoid_t;
+typedef struct {VertexOut v, step; int x, y, w; } scanline_t;

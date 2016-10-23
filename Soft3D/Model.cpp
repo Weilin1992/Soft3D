@@ -152,6 +152,8 @@ void Model::face_normal(Vertex &v1, Vertex &v2, Vertex &v3) {
 	edge2 = p3 - p2;
 
 	pn = edge1.cross(edge2);
+	pn.normalize();
+	pn.w = 0.0f;
 	v1.normal = v1.normal + pn;
 	v2.normal = v2.normal + pn;
 	v3.normal = v3.normal + pn;

@@ -137,6 +137,9 @@ public:
 		m[2][2] = z;
 	}
 
+
+
+
 	void SetRotate(T x,T y,T z,T theta) {
 		float qsin = (T)sin(theta*0.5f);
 		float qcos = (T)cos(theta*0.5f);
@@ -170,13 +173,13 @@ private:
 
 typedef Matrix44<float> Mat44f;
 
-Vec4f mul(Vec4f & v, Mat44f &m);
+Vec4f mul(const Vec4f & v, const Mat44f &m);
 
 typedef unsigned int IUINT32;
 
 
 
-inline Vec4f mul(Vec4f & v, Mat44f &m) {
+inline Vec4f mul(const Vec4f & v, const Mat44f &m) {
 	float x = v.x;
 	float y = v.y;
 	float z = v.z;

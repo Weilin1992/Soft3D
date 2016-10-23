@@ -5,6 +5,8 @@
 #include "Model.h"
 #include "Transform.h"
 #include "Vertex.h"
+#include "ShaderBase.h"
+#include "Shader.h"
 
 const int RENDER_STATE_WIREFRAME = 1;		// ‰÷»æœﬂøÚ
 const int RENDER_STATE_TEXTURE = 2;			// ‰÷»æŒ∆¿Ì
@@ -41,18 +43,20 @@ public:
 
 	Vertex mesh[8];
 
+	Shader * m_shader;
+
 public:
 	Device(int width, int height, IUINT32 *fb);
 	~Device();
 
 	void mesh_init();
 	void load_model(const char *file);
-
+	void set_shader(ShaderBase *shader);
 	void set_render_state(int state);
 
 	void draw_primitive(const Vertex &v1, const Vertex &v2, const Vertex &v3);
 	void render_trap(trapezoid_t *trap);
-	int trapezoid_init_triangle(trapezoid_t *trap, Vertex *p1, Vertex *p2, Vertex *p3);
+	int trapezoid_init_triangle(trapezoid_t *trap, VertexOut *p1, VertexOut *p2, VertexOut *p3);
 	void trapezoid_edge_interp(trapezoid_t *trap, float y);
 	void trapezoid_init_scan_line(const trapezoid_t *trap, scanline_t *scanline, int y);
 	void draw_scanline(scanline_t *scanline);
@@ -72,6 +76,27 @@ public:
 	void draw_model(float theta);
 	void draw_plane(int a, int b, int c, int d);
 	void draw_box(float theta);
+
+	void face_normal(Vertex &v1, Vertex &v2, Vertex &v3) {
+
+		Vec4f& p1 = v1.pos;
+		Vec4f& p2 = v2.pos;
+		Vec4f& p3 = v3.pos;
+
+		Vec4f edge1, edge2, pn;
+
+		edge1 = p2 - p1;
+		edge2 = p3 - p2;
+
+
+		pn = edge1.cross(edge2);
+		pn.normalize();
+		pn.w = 0.0f;
+		v1.normal = pn;
+		v2.normal =  pn;
+		v3.normal =  pn;
+	}
+
 
 };
 
