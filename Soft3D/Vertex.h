@@ -102,14 +102,14 @@ public:
 
 struct PointLight {
 	Vec4f pos;
-	color_t color;
-	color_t ambient;
+	Vec4f color;
+	Vec4f ambient;
 };
 
 struct ParallelLight{
 	Vec4f direction;
-	color_t color;
-	color_t ambient;
+	Vec4f color;
+	Vec4f ambient;
 };
 
 class VertexIn {
@@ -176,6 +176,10 @@ public:
 		res.posP.y = interp(v1.posP.y, v2.posP.y, t);
 		res.posP.z = interp(v1.posP.z, v2.posP.z, t);
 
+		res.posW.x = interp(v1.posW.x, v2.posW.x, t);
+		res.posW.y = interp(v1.posW.y, v2.posW.y, t);
+		res.posW.z = interp(v1.posW.z, v2.posW.z, t);
+
 		res.normal.x = interp(v1.normal.x, v2.normal.x, t);
 		res.normal.y = interp(v1.normal.y, v2.normal.y, t);
 		res.normal.z = interp(v1.normal.z, v2.normal.z, t);
@@ -199,6 +203,11 @@ public:
 		res.posP.z = (v2.posP.z - v1.posP.z)*inv;
 		res.posP.w = (v2.posP.w - v1.posP.w)*inv;
 
+		res.posW.x = (v2.posW.x - v1.posW.x)*inv;
+		res.posW.y = (v2.posW.y - v1.posW.y)*inv;
+		res.posW.z = (v2.posW.z - v1.posW.z)*inv;
+		res.posW.w = (v2.posW.w - v1.posW.w)*inv;
+
 		res.normal.x = (v2.normal.x - v1.normal.x)*inv;
 		res.normal.y = (v2.normal.y - v1.normal.y)*inv;
 		res.normal.z = (v2.normal.z - v1.normal.z)*inv;
@@ -215,6 +224,7 @@ public:
 	}
 	void add(const VertexOut &v) {
 		this->posP = v.posP + this->posP;
+		this->posW = v.posW + this->posW;
 		this->normal = v.normal + this->normal;
 		this->tc.u = v.tc.u + this->tc.u;
 		this->tc.v = v.tc.v + this->tc.v;

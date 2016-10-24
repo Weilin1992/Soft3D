@@ -10,12 +10,11 @@
 
 const int RENDER_STATE_WIREFRAME = 1;		// äÖÈ¾Ïß¿ò
 const int RENDER_STATE_TEXTURE = 2;			// äÖÈ¾ÎÆÀí
-const int RENDER_STATE_COLOR = 4;			// äÖÈ¾ÑÕÉ«
-const int RENDER_STATE_LIGHT = 8;			// äÖÈ¾¹âÕÕ
+
 
 class Device {
 public:
-	
+
 	Transform *transform;
 
 	PointLight *pointLight;
@@ -63,12 +62,12 @@ public:
 
 	void draw_line(int x1, int y1, int x2, int y2, IUINT32 c);
 	void draw_pixel(int x, int y, IUINT32 color);
-	
+
 	void init_texture();
 	IUINT32 read_texture(float u, float v);
 	void set_texture(void *bits, long pitch, int w, int h);
 	void clear(int mode);
-	
+
 	void camera_at_zero(float x, float y, float z);
 
 	void transform_Plight(float theta);
@@ -93,8 +92,15 @@ public:
 		pn.normalize();
 		pn.w = 0.0f;
 		v1.normal = pn;
-		v2.normal =  pn;
-		v3.normal =  pn;
+		v2.normal = pn;
+		v3.normal = pn;
+	}
+
+	void set_paralight(ParallelLight *p) {
+		m_shader->SetParallelLight(p);
+	}
+	void set_pointlight(PointLight *p) {
+		m_shader->SetPointLight(p);
 	}
 
 

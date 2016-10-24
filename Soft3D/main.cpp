@@ -1,6 +1,7 @@
 #include <Windows.h>
 #include <tchar.h>
 #include "Device.h"
+
 int screen_w, screen_h, screen_exit = 0;
 int  screen_mx = 0, screen_my = 0, screen_mb = 0;
 
@@ -119,36 +120,30 @@ void screen_update(void) {
 int main(void)
 {
 
-	int states[] = { RENDER_STATE_TEXTURE, RENDER_STATE_COLOR, RENDER_STATE_WIREFRAME,RENDER_STATE_LIGHT };
+	int states[] = { RENDER_STATE_TEXTURE,RENDER_STATE_WIREFRAME };
 	int indicator = 0;
 	int kbhit = 0;
 	float alpha = 1;
 	float pos = 3.0f;
 
-	TCHAR *title = _T("Mini3d (software render tutorial) - ")
-		_T("Left/Right: rotation, Up/Down: forward/backward, Space: switch state");
+	TCHAR *title = _T("Soft3D Space to change mode ");
 
 	if (screen_init(800, 600, title))
 		return -1;
 
 	Device device(800, 600, screen_fb);
 	
-	PointLight l = { { -100.f, 100.f, 100.f, 1.f },{ 0.5f, 0.5f, 0.5f }, {0.1,0.1,0.1} };
-	ParallelLight PL = { { -1.f, 1.f, -1.f, 0.f },{ 0.5f, 0.5f, 0.5f } };
-	device.pointLight = &l;
-	device.paraLight = &PL;
+	PointLight l = { { -100.f, 100.f, 100.f, 1.f },{ 0.5f, 0.5f, 0.5f,1.0f }, {0.1f,0.1f,0.1f,1.0f} };
+	ParallelLight PL = { { 1.f, 1.f, -0.f, 0.f },{ 0.5f, 0.5f, 0.5f ,1.0f },{ 0.3f,0.3f,0.3f,1.0f } };
+
+	device.set_paralight(&PL);
+	device.set_pointlight(&l);
+
 	device.init_texture();
 	device.render_state = RENDER_STATE_TEXTURE;
 
 
-	/*
-	int vsize, fsize;
-	Vertex* pVertexs;
-	Face* pFaces;
-	*/
-	//LoadMesh("models/teapot.obj", pVertexs, vsize, pFaces, fsize);
-
-	device.load_model("models/teapot.obj");
+	device.load_model("models/pumpkin.obj");
 
 	float theta = 0.0;
 	while (screen_exit == 0 && screen_keys[VK_ESCAPE] == 0) {
@@ -164,7 +159,7 @@ int main(void)
 		if (screen_keys[VK_SPACE]) {
 			if (kbhit == 0) {
 				kbhit = 1;
-				if (++indicator >= 3) indicator = 0;
+				if (++indicator >= 2) indicator = 0;
 				device.render_state = states[indicator];
 			}
 		}
@@ -172,7 +167,6 @@ int main(void)
 			kbhit = 0;
 		}
 		device.draw_model(alpha);
-		//device.draw_box(alpha);
 		screen_update();
 		Sleep(1);
 	}

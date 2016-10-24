@@ -74,7 +74,7 @@ void Device::draw_primitive(const Vertex & v1, const Vertex & v2, const Vertex &
 	t3.onDivZ_init();
 
 	//按照transform变化
-	c1 = transform->apply(v1.pos);
+	//c1 = transform->apply(v1.pos);
 	//c2 = transform->apply(v2.pos);
 	//c3 = transform->apply(v3.pos);
 
@@ -82,7 +82,7 @@ void Device::draw_primitive(const Vertex & v1, const Vertex & v2, const Vertex &
 	//if (transform->check_cvv(c2) != 0) return;
 	//if (transform->check_cvv(c3) != 0) return;
 
-	p1 = transform->homogenize(c1);
+	//p1 = transform->homogenize(c1);
 	//p2 = transform->homogenize(c2);
 	//p3 = transform->homogenize(c3);
 
@@ -91,7 +91,7 @@ void Device::draw_primitive(const Vertex & v1, const Vertex & v2, const Vertex &
 	//n3 = transform->apply(v3.normal);
 
 
-	if (render_state & (RENDER_STATE_TEXTURE | RENDER_STATE_COLOR)) {
+	if (render_state & (RENDER_STATE_TEXTURE)) {
 		//VertexOut t1 = v1, t2 = v2, t3 = v3;
 		int n;
 		trapezoid_t traps[2];
@@ -117,9 +117,9 @@ void Device::draw_primitive(const Vertex & v1, const Vertex & v2, const Vertex &
 		if (n >= 2) render_trap(&traps[1]);
 	}
 	if (render_state &RENDER_STATE_WIREFRAME) {
-		draw_line((int)p1.x, (int)p1.y, (int)p2.x, (int)p2.y, foreground);
-		draw_line((int)p1.x, (int)p1.y, (int)p3.x, (int)p3.y, foreground);
-		draw_line((int)p3.x, (int)p3.y, (int)p2.x, (int)p2.y, foreground);
+		draw_line((int)t1.posP.x, (int)t1.posP.y, (int)t2.posP.x, (int)t2.posP.y, foreground);
+		draw_line((int)t1.posP.x, (int)t1.posP.y, (int)t2.posP.x, (int)t2.posP.y, foreground);
+		draw_line((int)t2.posP.x, (int)t2.posP.y, (int)t2.posP.x, (int)t3.posP.y, foreground);
 	}
 }
 
@@ -222,61 +222,58 @@ void Device::draw_scanline(scanline_t * scanline)
 			if (rhw >= zb[x]) {
 				float ww = 1.0f / rhw;
 				zb[x] = rhw;
-				if (render_state & RENDER_STATE_COLOR) {
-					float r = scanline->v.color.r * ww;
-					float g = scanline->v.color.g * ww;
-					float b = scanline->v.color.b * ww;
-					int R = (int)(r * 255.0f);
-					int G = (int)(g * 255.0f);
-					int B = (int)(b * 255.0f);
-					R = CMID(R, 0, 255);
-					G = CMID(G, 0, 255);
-					B = CMID(B, 0, 255);
-					fb[x] = (R << 16) | (G << 8) | (B);
-					IUINT32 tmp = fb[x];
-				}
 				if (render_state & RENDER_STATE_TEXTURE) {
-					float u = scanline->v.tc.u * ww;
-					float v = scanline->v.tc.v * ww;
-					IUINT32 cc = read_texture(u, v);
+					float u = scanline->v.tc.u ;
+					float v = scanline->v.tc.v ;
 
-					Vec4f lightdir = paraLight->direction;
-					//lightdir = mul(lightdir, transform->world);
-					lightdir.normalize();
-					Vec4f n = scanline->v.normal;
-					n.normalize();
-					float diff = n.dot(lightdir);
-
-					//diff = diff > 0 ? diff : 0;
+					VertexOut& out = scanline->v;
+					out.tc.u *= ww;
+					out.tc.v *= ww;
+					
+					fb[x] = m_shader->PS(out);
+					out.tc.u = u;
+					out.tc.v = v;
 
 
-					float inv = (float)1 / 255;
-					color_t tex_color = { (cc >> 16) * inv, (cc >> 8 & 0xff) * inv, (cc & 0xff) * inv };
-					color_t ambient = { 1.0f, 1.0f, 1.0f };
-					float intensity = 0.3;
-					tex_color = {(float) 0.0666666701, (float)0.933333397,(float)0.933333397 };
-					// 环境光的影响
-					ambient.r *= intensity * tex_color.r;
-					ambient.g *= intensity * tex_color.g;
-					ambient.b *= intensity * tex_color.b;
+					//IUINT32 cc = read_texture(u, v);
 
-					color_t diffuse = { 0.f, 0.f, 0.f };
-					if (diff > 0) {
-						diffuse.r = tex_color.r * diff;
-						diffuse.g = tex_color.g * diff;
-						diffuse.b = tex_color.b * diff;
-					}
-					ambient.r += diffuse.r;
-					ambient.g += diffuse.g;
-					ambient.b += diffuse.b;
-					color_t res;
-					res = ambient;
-					res.r = res.r > 1.f ? 1.f : res.r;
-					res.g = res.g > 1.f ? 1.f : res.g;
-					res.b = res.b > 1.f ? 1.f : res.b;
-					cc = (int(res.r * 255) << 16 | int(res.g * 255) << 8 | int(res.b * 255));
+					//Vec4f lightdir = paraLight->direction;
+					////lightdir = mul(lightdir, transform->world);
+					//lightdir.normalize();
+					//Vec4f n = scanline->v.normal;
+					//n.normalize();
+					//float diff = n.dot(lightdir);
 
-					fb[x] = cc;
+					////diff = diff > 0 ? diff : 0;
+
+
+					//float inv = (float)1 / 255;
+					//color_t tex_color = { (cc >> 16) * inv, (cc >> 8 & 0xff) * inv, (cc & 0xff) * inv };
+					//color_t ambient = { 1.0f, 1.0f, 1.0f };
+					//float intensity = 0.3;
+					//tex_color = {(float) 0.0666666701, (float)0.933333397,(float)0.933333397 };
+					//// 环境光的影响
+					//ambient.r *= intensity * tex_color.r;
+					//ambient.g *= intensity * tex_color.g;
+					//ambient.b *= intensity * tex_color.b;
+
+					//color_t diffuse = { 0.f, 0.f, 0.f };
+					//if (diff > 0) {
+					//	diffuse.r = tex_color.r * diff;
+					//	diffuse.g = tex_color.g * diff;
+					//	diffuse.b = tex_color.b * diff;
+					//}
+					//ambient.r += diffuse.r;
+					//ambient.g += diffuse.g;
+					//ambient.b += diffuse.b;
+					//color_t res;
+					//res = ambient;
+					//res.r = res.r > 1.f ? 1.f : res.r;
+					//res.g = res.g > 1.f ? 1.f : res.g;
+					//res.b = res.b > 1.f ? 1.f : res.b;
+					//cc = (int(res.r * 255) << 16 | int(res.g * 255) << 8 | int(res.b * 255));
+
+					//fb[x] = cc;
 				}
 
 
@@ -416,11 +413,12 @@ void Device::init_texture()
 		}
 	}
 	set_texture(text, 256 * 4, 256, 256);
+	m_shader->SetTexture(texture,256,256);
 }
 
 void Device::camera_at_zero(float x, float y, float z)
 {
-	point_t eye = { x, y, z, 1 }, at = { 0, 0, 0, 1 }, up = { 0, 1, 0, 1 };
+	point_t eye = { x, y, z, 1 }, at = { 0, 3, 0, 1 }, up = { 0, 1, 0, 1 };
 	transform->set_look_at(eye, at, up);
 	transform->update();
 	m_shader->SetEyePos(eye);
@@ -450,7 +448,7 @@ void Device::draw_model(float theta)
 		v1.tc = { 0,0 };
 		v2.tc = { 0,0 };
 		v3.tc = { 0,0 };
-		face_normal(v1, v2, v3);
+		//face_normal(v1, v2, v3);
 		draw_primitive(v1, v2, v3);
 	}
 }
