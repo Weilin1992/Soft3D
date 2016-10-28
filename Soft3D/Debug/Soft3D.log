@@ -1,4 +1,4 @@
 ﻿  main.cpp
-c:\users\ziqi\documents\github\soft3d\soft3d\main.cpp(23): warning C4838: 从“int”转换到“DWORD”需要收缩转换
+c:\users\ziqi\documents\github\soft3d\soft3d\main.cpp(24): warning C4838: 从“int”转换到“DWORD”需要收缩转换
   Soft3D.vcxproj -> C:\Users\ZiQi\Documents\GitHub\Soft3D\Debug\Soft3D.exe
   Soft3D.vcxproj -> C:\Users\ZiQi\Documents\GitHub\Soft3D\Debug\Soft3D.pdb (Partial PDB)
