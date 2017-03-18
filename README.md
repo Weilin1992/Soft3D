@@ -13,6 +13,6 @@
 *  点光源，平行光，逐像素着色，纹理映射， obj模型加载。
 
 
-一只蓝色的南瓜
+a blue pumpkin一只蓝色的南瓜
 
 ![一只蓝色的南瓜](Soft3D/img/Capture.PNG)
