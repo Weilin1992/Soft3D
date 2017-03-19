@@ -4,7 +4,7 @@
 * D3D Left-Handed Coordinate System
 * simple CVV,z-buffer triangle Scan-Line Filling
 * simple vertex shader and pixel shader
-* point light, parallel light, per pixel light, obj model file loading.
+* point light, parallel lighting, per pixel light, obj model file loading.
 
 *	模仿D3D渲染管线，实现软件光栅化
 *	实现基本的矩阵及向量等计算的数学库。
